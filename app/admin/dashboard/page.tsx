@@ -21,14 +21,22 @@ import {
   Download,
   Filter,
   Search,
-  MoreVertical
+  MoreVertical,
+  FileDown
 } from 'lucide-react';
+import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockAnalytics, mockDepartmentStats, mockUsers, mockSessions, mockAttendance } from '@/lib/mock-data';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
+  const [filters, setFilters] = useState({
+    department: '',
+    status: '',
+    searchQuery: '',
+    startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
+    endDate: new Date(),
+  });
   const [realtimeData, setRealtimeData] = useState({
     activeSessions: 12,
     onlineUsers: 847,
@@ -47,6 +55,43 @@ const AdminDashboard: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleApplyFilters = (newFilters: any) => {
+    setFilters(newFilters);
+    // In a real app, you would fetch data based on these filters
+    console.log('Applying filters:', newFilters);
+  };
+
+  const handleExport = (exportFilters: any) => {
+    // In a real app, this would generate a report based on the filters
+    console.log('Exporting with filters:', exportFilters);
+    
+    // Simulate file download
+    const data = {
+      generatedAt: new Date().toISOString(),
+      filters: exportFilters,
+      metrics: {
+        totalUsers,
+        activeUsers,
+        totalSessions,
+        completedSessions,
+        avgAttendance,
+        attendanceTrend
+      },
+      // Add more data as needed
+    };
+
+    const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute('download', `dashboard-export-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+    // Show success message (you can use a toast notification here)
+    alert('Export started successfully!');
+  };
 
   const totalUsers = mockUsers.length;
   const activeUsers = mockUsers.filter(u => u.status === 'active').length;
@@ -75,14 +120,10 @@ const AdminDashboard: React.FC = () => {
               </p>
             </div>
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="secondary" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
-              </Button>
-              <Button variant="secondary" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
+              <DashboardFilters 
+                onApplyFilters={handleApplyFilters} 
+                onExport={handleExport} 
+              />
             </div>
           </div>
         </div>

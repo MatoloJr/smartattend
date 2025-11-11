@@ -7,7 +7,7 @@ export const mockUsers: User[] = [
     username: 'admin001',
     email: 'admin@techuniversity.edu',
     password: 'admin123',
-    role: 'super_admin',
+    role: 'admin',
     name: 'John Administrator',
     institution: 'Tech University',
     department: 'IT Administration',
@@ -114,39 +114,60 @@ export const mockUsers: User[] = [
 
 export const mockInstitutions: Institution[] = [
   {
-    id: 'inst_1',
     name: 'Tech University',
+    domain: 'techuniversity.edu',
     type: 'University',
-    country: 'United States',
-    primary_campus: 'Main Campus, Silicon Valley',
-    additional_campuses: [
-      'Downtown Campus',
-      'North Campus',
-      'Online Division'
-    ],
-    admin_email: 'admin@techuniversity.edu',
-    created_at: '2024-01-01T00:00:00Z',
+    address: {
+      city: 'Silicon Valley',
+      state: 'California',
+      country: 'United States'
+    },
+    contact: {
+      email: 'info@techuniversity.edu',
+      phone: '+1-555-123-4567',
+      website: 'https://techuniversity.edu'
+    },
+    primaryCampus: 'Main Campus',
+    additionalCampuses: ['Downtown Campus', 'West Campus'],
+    settings: {
+      attendanceThreshold: 75,
+      sessionDuration: 60
+    },
+    isActive: true,
     status: 'active',
-    total_students: 12847,
-    total_faculty: 847,
-    total_courses: 1250
+    total_students: 10000,
+    total_faculty: 500,
+    total_courses: 200,
+    createdAt: new Date('2024-01-01T00:00:00Z'),
+    updatedAt: new Date()
   },
   {
-    id: 'inst_2',
     name: 'Metro College',
+    domain: 'metrocollege.ca',
     type: 'College',
-    country: 'Canada',
-    primary_campus: 'Central Campus, Toronto',
-    additional_campuses: [
-      'East Campus',
-      'West Campus'
-    ],
-    admin_email: 'admin@metrocollege.ca',
-    created_at: '2024-01-05T00:00:00Z',
+    address: {
+      city: 'Toronto',
+      state: 'Ontario',
+      country: 'Canada'
+    },
+    contact: {
+      email: 'info@metrocollege.ca',
+      phone: '+1-416-555-1234',
+      website: 'https://metrocollege.ca'
+    },
+    primaryCampus: 'Main Campus',
+    additionalCampuses: ['East Campus'],
+    settings: {
+      attendanceThreshold: 80,
+      sessionDuration: 60
+    },
+    isActive: true,
     status: 'active',
-    total_students: 5432,
-    total_faculty: 234,
-    total_courses: 480
+    total_students: 8000,
+    total_faculty: 350,
+    total_courses: 150,
+    createdAt: new Date('2023-06-15T00:00:00Z'),
+    updatedAt: new Date()
   }
 ];
 

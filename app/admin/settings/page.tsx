@@ -18,6 +18,7 @@ import {
   Mail,
   Smartphone,
   Globe,
+  Download,
   Clock,
   Users,
   Building2,
@@ -59,6 +60,8 @@ const AdminSettings: React.FC = () => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -75,6 +78,80 @@ const AdminSettings: React.FC = () => {
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleBackupNow = async () => {
+    setIsBackingUp(true);
+    try {
+      // Simulate backup process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // In a real app, this would be an API call to trigger a backup
+      console.log('Backup process started');
+      
+      // Create a download link for the backup file
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        settings,
+        status: 'completed'
+      };
+      
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `smartattend-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Backup completed and downloaded successfully!');
+    } catch (error) {
+      console.error('Backup failed:', error);
+      toast.error('Failed to create backup');
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // In a real app, this would fetch data from the API
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        settings,
+        // Add other system data as needed
+        systemInfo: {
+          version: '1.0.0',
+          lastBackup: new Date().toISOString(),
+          totalUsers: 0, // This would come from your API
+          totalSessions: 0 // This would come from your API
+        }
+      };
+      
+      // Create and trigger download
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `smartattend-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('System data exported successfully!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export system data');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -403,13 +480,41 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full">
-                    <Database className="h-4 w-4 mr-2" />
-                    Backup Now
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleBackupNow}
+                    disabled={isBackingUp}
+                  >
+                    {isBackingUp ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Backing Up...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4 mr-2" />
+                        Backup Now
+                      </>
+                    )}
                   </Button>
-                  <Button variant="outline" className="w-full">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export System Data
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleExportData}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export System Data
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

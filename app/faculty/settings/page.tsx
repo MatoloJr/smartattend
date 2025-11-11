@@ -50,12 +50,7 @@ const FacultySettings: React.FC = () => {
     // Privacy Settings
     profileVisibility: 'institution',
     showContactInfo: true,
-    allowStudentMessages: true,
-    
-    // Security
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    allowStudentMessages: true
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -64,27 +59,13 @@ const FacultySettings: React.FC = () => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const saveSettings = async () => {
+  const handleSave = async () => {
     setIsSaving(true);
     
     try {
-      // Validate password change if attempted
-      if (settings.newPassword && settings.newPassword !== settings.confirmPassword) {
-        toast.error('New passwords do not match');
-        return;
-      }
-      
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success('Settings saved successfully!');
-      
-      // Clear password fields
-      setSettings(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
       
     } catch (error) {
       toast.error('Failed to save settings');
@@ -106,7 +87,7 @@ const FacultySettings: React.FC = () => {
               Manage your profile and teaching preferences
             </p>
           </div>
-          <Button onClick={saveSettings} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <>
                 <Clock className="h-4 w-4 mr-2 animate-spin" />
@@ -296,87 +277,56 @@ const FacultySettings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Security Settings */}
+          {/* Privacy Settings */}
           <Card className="glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                Security & Privacy
+                Privacy Settings
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Profile Visibility</Label>
-                <Select value={settings.profileVisibility} onValueChange={(value) => handleSettingChange('profileVisibility', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="institution">Institution Only</SelectItem>
-                    <SelectItem value="department">Department Only</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>Show Contact Information</Label>
-                <Switch
-                  checked={settings.showContactInfo}
-                  onCheckedChange={(checked) => handleSettingChange('showContactInfo', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>Allow Student Messages</Label>
-                <Switch
-                  checked={settings.allowStudentMessages}
-                  onCheckedChange={(checked) => handleSettingChange('allowStudentMessages', checked)}
-                />
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h4 className="font-medium">Change Password</h4>
-                
+              <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="current-password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={settings.currentPassword}
-                      onChange={(e) => handleSettingChange('currentPassword', e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
+                  <Label>Profile Visibility</Label>
+                  <Select 
+                    value={settings.profileVisibility}
+                    onValueChange={(value) => handleSettingChange('profileVisibility', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select visibility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="institution">Institution Only</SelectItem>
+                      <SelectItem value="students">Students in My Classes</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input
-                    id="new-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={settings.newPassword}
-                    onChange={(e) => handleSettingChange('newPassword', e.target.value)}
+                
+                <div className="flex items-center justify-between pt-2">
+                  <div className="space-y-1">
+                    <Label>Show Contact Information</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Allow others to see your email and phone number
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={settings.showContactInfo}
+                    onCheckedChange={(checked) => handleSettingChange('showContactInfo', checked)}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input
-                    id="confirm-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={settings.confirmPassword}
-                    onChange={(e) => handleSettingChange('confirmPassword', e.target.value)}
+                
+                <div className="flex items-center justify-between pt-2">
+                  <div className="space-y-1">
+                    <Label>Allow Student Messages</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Let students send you direct messages
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={settings.allowStudentMessages}
+                    onCheckedChange={(checked) => handleSettingChange('allowStudentMessages', checked)}
                   />
                 </div>
               </div>

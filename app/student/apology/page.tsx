@@ -354,6 +354,8 @@ const StudentApology: React.FC = () => {
                         multiple
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                         onChange={handleFileUpload}
+                        title="Upload supporting documents"
+                        aria-label="Upload supporting documents such as medical certificates or official letters"
                       />
                     </div>
                   </div>

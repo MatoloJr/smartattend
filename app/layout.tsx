@@ -2,8 +2,10 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProvider } from '@/contexts/ThemeContext'; // We'll keep this for now to avoid breaking changes
 import { Toaster } from '@/components/ui/sonner';
+import { QueryProvider } from '@/providers/QueryProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -15,11 +17,6 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/icons/apple-touch-icon.png',
   },
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#3B82F6' },
-    { media: '(prefers-color-scheme: dark)', color: '#1E293B' }
-  ],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   other: {
     'mobile-web-app-capable': 'yes'
   },
@@ -44,12 +41,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </AuthProvider>
-        </ThemeProvider>
+        <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider>
+            <AuthProvider>
+              <QueryProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+              </QueryProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </NextThemesProvider>
       </body>
     </html>
   );

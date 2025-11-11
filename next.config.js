@@ -1,11 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    esmExternals: 'loose',
+  },
   output: 'export',
-  optimizeFonts: false,
+  poweredByHeader: false,
+  compress: true,
+  optimizeFonts: true,
+  swcMinify: true,
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
   images: { unoptimized: true },
+  experimental: {
+    optimizeCss: true
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig

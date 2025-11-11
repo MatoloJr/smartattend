@@ -33,20 +33,41 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         resolved = theme as 'light' | 'dark';
       }
       
+      // Disable transitions during theme switch to prevent flash
+      const root = document.documentElement;
+      root.classList.add('disable-transitions');
+      
+      // Update resolved theme
       setResolvedTheme(resolved);
       
-      // Update document class
-      document.documentElement.classList.remove('light', 'dark');
-      document.documentElement.classList.add(resolved);
+      // Update data-theme attribute for Tailwind
+      root.setAttribute('data-theme', resolved);
+      
+      // Also update class for backward compatibility
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
+      
+      // Force a reflow to ensure the class is applied before enabling transitions
+      void root.offsetHeight;
+      
+      // Re-enable transitions after a short delay
+      setTimeout(() => {
+        root.classList.remove('disable-transitions');
+      }, 50);
     };
 
     updateResolvedTheme();
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', updateResolvedTheme);
-
-    return () => mediaQuery.removeEventListener('change', updateResolvedTheme);
+    const handleSystemThemeChange = () => {
+      if (theme === 'system') {
+        updateResolvedTheme();
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, [theme]);
 
   const handleSetTheme = (newTheme: Theme) => {

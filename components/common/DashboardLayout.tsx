@@ -6,6 +6,7 @@ import { Header } from './Header';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const { user, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useLocalStorage('sidebar-expanded', true);
+  
+  const handleSidebarToggle = (expanded: boolean) => {
+    setIsSidebarExpanded(expanded);
+  };
   const pathname = usePathname();
 
     useEffect(() => {
@@ -41,9 +46,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         isExpanded={isSidebarExpanded}
+        onToggle={handleSidebarToggle}
       />
       
-      <div className="flex-1">
+      <div className={cn(
+        'flex-1 transition-all duration-300 ease-in-out',
+        isSidebarExpanded ? 'lg:ml-64' : 'lg:ml-20'
+      )}>
         <div className="flex flex-col h-screen">
           <Header 
             title={pageTitle}

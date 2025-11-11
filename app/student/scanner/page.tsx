@@ -12,6 +12,12 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, MapPin, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { 
+  generateDeviceFingerprint, 
+  checkRateLimit, 
+  verifyQRExpiry,
+  verifyWatermark 
+} from '@/lib/security';
 
 interface ScannedSession {
   sessionId: string;
@@ -31,16 +37,60 @@ const StudentScanner: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
 
-  const handleScanSuccess = (decodedData: ScannedSession) => {
+  const handleScanSuccess = async (decodedData: any) => {
     console.log('Decoded QR data:', decodedData);
     
-    if (decodedData.type !== 'attendance_session') {
-      toast.error('Invalid QR code type');
-      return;
-    }
+    try {
+      // Check if it's the new secure format or old format
+      const isSecureFormat = decodedData.type === 'secure_attendance_session';
+      const isLegacyFormat = decodedData.type === 'attendance_session';
+      
+      if (!isSecureFormat && !isLegacyFormat) {
+        toast.error('Invalid QR code type');
+        return;
+      }
 
-    setScannedSession(decodedData);
-    toast.success('QR code scanned successfully!');
+      // For secure format, perform additional validations
+      if (isSecureFormat) {
+        // Verify QR code hasn't expired
+        if (!verifyQRExpiry(decodedData.expiry)) {
+          toast.error('QR code has expired. Ask lecturer for a new code.');
+          return;
+        }
+
+        // Generate device fingerprint
+        const deviceFingerprint = await generateDeviceFingerprint();
+
+        // Check rate limiting
+        const rateLimitCheck = checkRateLimit(
+          user?.id || '',
+          decodedData.sessionId,
+          deviceFingerprint.id,
+          decodedData.nonce
+        );
+
+        if (!rateLimitCheck.allowed) {
+          toast.error(rateLimitCheck.reason || 'Submission blocked. Please try again later.');
+          return;
+        }
+
+        // Verify watermark
+        if (!verifyWatermark(decodedData.sessionId, decodedData.nonce, decodedData.watermark)) {
+          toast.error('QR code verification failed. Please scan again.');
+          return;
+        }
+
+        toast.success('QR code verified successfully! ✓');
+      } else {
+        toast.success('QR code scanned successfully!');
+      }
+
+      setScannedSession(decodedData);
+      
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      toast.error('Failed to process QR code');
+    }
   };
 
   const handleScanError = (error: string) => {
@@ -59,6 +109,9 @@ const StudentScanner: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Generate device fingerprint for secure tracking
+      const deviceFingerprint = await generateDeviceFingerprint();
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -71,17 +124,24 @@ const StudentScanner: React.FC = () => {
         timestamp: new Date().toISOString(),
         status: 'present',
         scan_method: 'qr_code',
-        location_verified: true
+        location_verified: true,
+        device_fingerprint: deviceFingerprint.id,
+        ip_address: deviceFingerprint.ipAddress,
+        nonce: (scannedSession as any).nonce || null,
+        qr_type: scannedSession.type
       };
 
       console.log('Attendance recorded:', attendanceRecord);
       
+      // In production, send to backend API
+      // await fetch('/api/attendance', { method: 'POST', body: JSON.stringify(attendanceRecord) });
+      
       setAttendanceSubmitted(true);
-      toast.success('Attendance marked successfully!');
+      toast.success('Attendance marked successfully! ✓');
       
     } catch (error) {
       console.error('Error submitting attendance:', error);
-      toast.error('Failed to submit attendance');
+      toast.error('Failed to submit attendance. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

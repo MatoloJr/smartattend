@@ -43,9 +43,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: false
   });
 
+  // Save user to localStorage whenever it changes
   useEffect(() => {
-    // Check for existing session on mount
+    if (state.user) {
+      localStorage.setItem('auth_user', JSON.stringify(state.user));
+      // Also store the role in a separate key for easier access
+      if (state.user.role) {
+        localStorage.setItem('user_role', state.user.role);
+      }
+    } else {
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('user_role');
+    }
+  }, [state.user]);
+
+  // Check for existing session on mount
+  useEffect(() => {
     const savedUser = localStorage.getItem('auth_user');
+    const savedRole = localStorage.getItem('user_role');
+    
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
@@ -57,29 +73,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     dispatch({ type: 'LOGIN_START' });
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const user = mockUsers.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-      // Update last login time
-      user.last_login = new Date().toISOString();
-      localStorage.setItem('auth_user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN_SUCCESS', user });
-      return true;
-    } else {
-      dispatch({ type: 'LOGIN_FAILURE' });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const userData = await response.json();
+      
+      if (userData.user) {
+        // Ensure the role is properly set
+        const userWithRole = { 
+          ...userData.user, 
+          role: userData.user.role || 'student',
+          id: userData.user._id || userData.user.id
+        };
+        
+        dispatch({ type: 'LOGIN_SUCCESS', user: userWithRole });
+        return true;
+      }
+      
       return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      dispatch({ type: 'LOGIN_FAILURE' });
+      throw error; // Re-throw to be handled by the login form
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_user');
     dispatch({ type: 'LOGOUT' });
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('user_role');
   };
 
   const register = async (userData: Partial<User>): Promise<boolean> => {

@@ -28,6 +28,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className }) => {
       <button
         onClick={() => setIsExpanded(true)}
         className={cn("p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800", className)}
+        aria-label="Open search"
       >
         <Search className="h-5 w-5" />
       </button>

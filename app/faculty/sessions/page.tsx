@@ -7,6 +7,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
@@ -25,6 +44,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { mockSessions } from '@/lib/mock-data';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface ActiveSession {
   id: string;
@@ -38,15 +58,69 @@ interface ActiveSession {
   isActive: boolean;
 }
 
+const sessionFormSchema = z.object({
+  courseCode: z.string().min(1, 'Course code is required'),
+  courseName: z.string().min(1, 'Course name is required'),
+  date: z.string().min(1, 'Date is required'),
+  startTime: z.string().min(1, 'Start time is required'),
+  endTime: z.string().min(1, 'End time is required'),
+  location: z.string().min(1, 'Location is required'),
+  enrolledStudents: z.number().min(1, 'Number of students is required')
+});
+
+type SessionFormValues = z.infer<typeof sessionFormSchema>;
+
 const FacultySessions: React.FC = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [sessionTimer, setSessionTimer] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
+  
+  const form = useForm<SessionFormValues>({
+    resolver: zodResolver(sessionFormSchema),
+    defaultValues: {
+      courseCode: '',
+      courseName: '',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '09:00',
+      endTime: '10:00',
+      location: '',
+      enrolledStudents: 30
+    },
+  });
 
   // Get faculty sessions
   const facultySessions = mockSessions.filter(s => s.faculty_id === user?.id);
   const todaySessions = facultySessions.filter(s => s.date === selectedDate);
+
+  const handleCreateSession = (data: SessionFormValues) => {
+    // In a real app, this would be an API call
+    const newSession = {
+      id: `session_${Date.now()}`,
+      course_code: data.courseCode,
+      course_name: data.courseName,
+      faculty_id: user?.id || '',
+      faculty_name: user?.name || 'Instructor',
+      date: data.date,
+      start_time: data.startTime,
+      end_time: data.endTime,
+      duration: (new Date(`1970-01-01T${data.endTime}`).getTime() - new Date(`1970-01-01T${data.startTime}`).getTime()) / 60000,
+      location: data.location,
+      enrolled_students: data.enrolledStudents,
+      attendance_records: [],
+      qr_code: '',
+      status: 'scheduled' as const,
+      created_at: new Date().toISOString()
+    };
+    
+    // In a real app, update the state or make an API call
+    mockSessions.push(newSession);
+    setIsSessionDialogOpen(false);
+    form.reset();
+    toast.success('Session created successfully!');
+  };
 
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -147,7 +221,10 @@ const FacultySessions: React.FC = () => {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-40"
             />
-            <Button size="sm">
+            <Button 
+              size="sm" 
+              onClick={() => setIsSessionDialogOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Session
             </Button>
@@ -217,15 +294,6 @@ const FacultySessions: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-
-                <QRGenerator
-                  sessionId={activeSession.id}
-                  courseCode={activeSession.courseCode}
-                  courseName={activeSession.courseName}
-                  facultyName={user?.name || ''}
-                  timestamp={activeSession.qrTimestamp}
-                  onRegenerateCode={regenerateQR}
-                />
               </div>
             </CardContent>
           </Card>
@@ -287,7 +355,10 @@ const FacultySessions: React.FC = () => {
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-600 dark:text-gray-400">No sessions scheduled for this date</p>
-                  <Button className="mt-4">
+                  <Button 
+                    className="mt-4"
+                    onClick={() => setIsSessionDialogOpen(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Schedule Session
                   </Button>
@@ -302,7 +373,11 @@ const FacultySessions: React.FC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Recent Sessions</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/faculty/analytics')}
+              >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 View Analytics
               </Button>
@@ -340,6 +415,139 @@ const FacultySessions: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Session Dialog */}
+      <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Session</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new class session.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleCreateSession)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="courseCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. CS101" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="courseName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Introduction to Programming" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
+                        <Input type="date" {...field} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Room 101" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="enrolledStudents"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Students</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsSessionDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Session
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

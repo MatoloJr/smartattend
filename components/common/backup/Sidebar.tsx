@@ -55,7 +55,7 @@ const getRoleMenuItems = (role: string) => {
       return [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/faculty/dashboard' },
         { icon: Calendar, label: 'Sessions', href: '/faculty/sessions' },
-        { icon: QrCode, label: 'QR Scanner', href: '/faculty/scanner' },
+        { icon: QrCode, label: 'QR Generator', href: '/faculty/generator' },
         { icon: PieChart, label: 'Reports', href: '/faculty/reports' },
         { icon: Settings, label: 'Settings', href: '/faculty/settings' },
       ];

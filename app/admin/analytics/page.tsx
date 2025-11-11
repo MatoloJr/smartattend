@@ -22,7 +22,18 @@ import {
   Target
 } from 'lucide-react';
 import { mockAnalytics, mockDepartmentStats, mockTimePatterns } from '@/lib/mock-data';
-import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { 
+  PieChart as RechartsPieChart, 
+  Pie, 
+  Cell, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip 
+} from 'recharts';
 
 const AdminAnalytics: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30d');

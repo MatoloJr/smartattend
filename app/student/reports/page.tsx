@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { 
   Download, 
   Calendar, 
@@ -17,16 +18,28 @@ import {
   CheckCircle,
   AlertTriangle,
   Target,
-  Award
+  Award,
+  FileText,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockSessions, mockAttendance, mockUsers } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { toast } from 'sonner';
+import { generatePDFReport, StudentReportData } from '@/lib/report-generator';
 
 const StudentReports: React.FC = () => {
   const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('semester');
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('current');
+  const [selectedWeek, setSelectedWeek] = useState('all');
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1); // Start of year
+    return { start, end: now };
+  });
+  const [reportGenerated, setReportGenerated] = useState<Date>(new Date());
 
   // Get student data
   const student = mockUsers.find(u => u.id === user?.id);
@@ -62,15 +75,55 @@ const StudentReports: React.FC = () => {
     };
   });
 
+  // Calculate semester weeks
+  const getSemesterWeeks = () => {
+    const semesterStart = new Date(dateRange.start);
+    const semesterEnd = new Date(dateRange.end);
+    const weeks: { number: number; start: Date; end: Date; label: string }[] = [];
+    
+    let currentWeekStart = new Date(semesterStart);
+    let weekNumber = 1;
+    
+    while (currentWeekStart <= semesterEnd) {
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      weeks.push({
+        number: weekNumber,
+        start: new Date(currentWeekStart),
+        end: weekEnd > semesterEnd ? semesterEnd : weekEnd,
+        label: `Week ${weekNumber}`
+      });
+      
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      weekNumber++;
+    }
+    
+    return weeks;
+  };
+  
+  const semesterWeeks = getSemesterWeeks();
+  
   // Generate weekly attendance data
-  const weeklyData = Array.from({ length: 12 }, (_, i) => {
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - (i * 7));
+  const weeklyData = semesterWeeks.slice(0, 12).map((week, i) => {
+    // Filter attendance for this week
+    const weekAttendance = studentAttendance.filter(a => {
+      const attendanceDate = new Date(a.timestamp || Date.now());
+      return attendanceDate >= week.start && attendanceDate <= week.end;
+    });
+    
+    const weekSessions = mockSessions.filter(s => {
+      const sessionDate = new Date(s.date);
+      return sessionDate >= week.start && sessionDate <= week.end;
+    });
     
     return {
-      week: `Week ${12 - i}`,
-      attendance: Math.round(75 + Math.random() * 20),
-      sessions: Math.floor(3 + Math.random() * 5)
+      week: week.label,
+      attendance: weekSessions.length > 0 
+        ? Math.round((weekAttendance.length / weekSessions.length) * 100)
+        : 0,
+      sessions: weekSessions.length,
+      attended: weekAttendance.length
     };
   });
 
@@ -105,31 +158,125 @@ const StudentReports: React.FC = () => {
     <DashboardLayout title="My Reports">
       <div className="space-y-6 animate-fadeIn">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              My Attendance Reports
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Detailed analysis of your academic attendance
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="semester">This Semester</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                My Attendance Reports
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Detailed analysis of your academic attendance
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                Generated: {reportGenerated.toLocaleString()}
+              </p>
+            </div>
+            <Button size="sm" onClick={async () => {
+              const reportData: StudentReportData = {
+                title: 'Student Attendance Report',
+                subtitle: `${user?.name} - ${user?.student_id}`,
+                generatedAt: new Date(),
+                generatedBy: user?.name || 'Student',
+                period: {
+                  start: dateRange.start,
+                  end: dateRange.end,
+                  label: `${selectedSemester} - ${selectedPeriod}`
+                },
+                data: subjectPerformance,
+                studentId: user?.student_id || '',
+                studentName: user?.name || '',
+                courses: subjectPerformance.map(sp => ({
+                  courseCode: sp.subject,
+                  courseName: sp.courseName,
+                  attendance: sp.attendance,
+                  present: sp.present,
+                  late: sp.late,
+                  absent: sp.absent,
+                  total: sp.sessions
+                })),
+                overallAttendance,
+                grade: attendanceGrade
+              };
+              
+              await generatePDFReport(reportData, 'student');
+              setReportGenerated(new Date());
+              toast.success('Report downloaded successfully!');
+            }}>
               <Download className="h-4 w-4 mr-2" />
-              Export PDF
+              Export Report
             </Button>
           </div>
+          
+          {/* Filters */}
+          <Card className="glass">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="semester">Semester</Label>
+                  <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                    <SelectTrigger id="semester">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Current Semester</SelectItem>
+                      <SelectItem value="fall2024">Fall 2024</SelectItem>
+                      <SelectItem value="spring2024">Spring 2024</SelectItem>
+                      <SelectItem value="fall2023">Fall 2023</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="week">Week</Label>
+                  <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+                    <SelectTrigger id="week">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Weeks</SelectItem>
+                      {semesterWeeks.map((week) => (
+                        <SelectItem key={week.number} value={week.number.toString()}>
+                          {week.label} ({week.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Course</Label>
+                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger id="subject">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Courses</SelectItem>
+                      {enrolledCourses.map((course) => (
+                        <SelectItem key={course} value={course}>
+                          {course}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="period">Period</Label>
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger id="period">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="week">This Week</SelectItem>
+                      <SelectItem value="month">This Month</SelectItem>
+                      <SelectItem value="semester">This Semester</SelectItem>
+                      <SelectItem value="year">This Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Performance Summary */}

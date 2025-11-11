@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Camera, CameraOff, Flashlight, FlashlightOff, RotateCcw } from 'lucide-react';
+import { Camera, CameraOff, Flashlight, FlashlightOff, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface QRScannerProps {
@@ -21,69 +21,92 @@ export const QRScanner: React.FC<QRScannerProps> = ({
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [cameras, setCameras] = useState<any[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
 
+  // Generate a sample code for the placeholder
+  const generateSampleCode = useCallback(() => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = '';
+    for (let i = 0; i < 7; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `${result.substring(0, 3)}-${result.substring(3)}`;
+  }, []);
+
   useEffect(() => {
-    // Get available cameras
-    Html5QrcodeScanner.getCameras().then(devices => {
-      setCameras(devices);
-      if (devices.length > 0) {
-        setSelectedCamera(devices[0].id);
+    // Get available cameras - use Html5Qrcode instead of Html5QrcodeScanner
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameras(videoDevices);
+        if (videoDevices.length > 0) {
+          setSelectedCamera(videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error('Error getting cameras:', err);
+        toast.error('Unable to access camera devices');
       }
-    }).catch(err => {
-      console.error('Error getting cameras:', err);
-    });
+    };
+
+    getCameras();
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear();
+        scannerRef.current.clear().catch(err => console.error('Error clearing scanner:', err));
       }
     };
   }, []);
 
   const startScanner = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear();
-    }
-
-    const scanner = new Html5QrcodeScanner(
-      "qr-scanner-container",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        showTorchButtonIfSupported: true,
-        showZoomSliderIfSupported: true,
-        defaultZoomValueIfSupported: 2
-      },
-      false
-    );
-
-    scanner.render(
-      (decodedText) => {
-        try {
-          const decodedData = JSON.parse(atob(decodedText));
-          onScanSuccess(decodedData);
-          stopScanner();
-          toast.success('QR code scanned successfully!');
-        } catch (error) {
-          console.error('Error parsing QR data:', error);
-          toast.error('Invalid QR code format');
-          if (onScanError) {
-            onScanError('Invalid QR code format');
-          }
-        }
-      },
-      (errorMessage) => {
-        // Suppress frequent scan errors
-        console.log('Scan error:', errorMessage);
-      }
-    );
-
-    scannerRef.current = scanner;
     setIsScanning(true);
+    
+    // Wait for DOM to update before initializing scanner
+    setTimeout(() => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(err => console.error(err));
+      }
+
+      const scanner = new Html5QrcodeScanner(
+        "qr-scanner-container",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          showTorchButtonIfSupported: true,
+          showZoomSliderIfSupported: true,
+          defaultZoomValueIfSupported: 2,
+          rememberLastUsedCamera: true
+        },
+        false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          try {
+            const decodedData = JSON.parse(atob(decodedText));
+            onScanSuccess(decodedData);
+            stopScanner();
+            toast.success('QR code scanned successfully!');
+          } catch (error) {
+            console.error('Error parsing QR data:', error);
+            toast.error('Invalid QR code format');
+            if (onScanError) {
+              onScanError('Invalid QR code format');
+            }
+          }
+        },
+        (errorMessage) => {
+          // Suppress frequent scan errors
+          console.log('Scan error:', errorMessage);
+        }
+      );
+
+      scannerRef.current = scanner;
+    }, 100);
   };
 
   const stopScanner = () => {
@@ -94,23 +117,117 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     setIsScanning(false);
   };
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  // Format manual code as XXX-XXXX and auto-capitalize
+  const formatManualCode = (input: string): string => {
+    // Remove all non-alphanumeric characters and convert to uppercase
+    let formatted = input.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    
+    // Limit to 7 characters (3+4)
+    if (formatted.length > 7) {
+      formatted = formatted.substring(0, 7);
+    }
+    
+    // Add hyphen after 3 characters
+    if (formatted.length > 3) {
+      formatted = `${formatted.substring(0, 3)}-${formatted.substring(3)}`;
+    }
+    
+    return formatted;
+  };
+
+  const handleManualCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatManualCode(e.target.value);
+    setManualCode(formatted);
+  };
+
+  const validateSessionCode = (code: string) => {
+    try {
+      const sessions = JSON.parse(localStorage.getItem('attendanceSessions') || '{}');
+      const session = sessions[code];
+      
+      if (!session) {
+        throw new Error('Invalid session code');
+      }
+      
+      if (session.expiresAt < Date.now()) {
+        throw new Error('This session has expired');
+      }
+      
+      return session;
+    } catch (error) {
+      console.error('Error validating session:', error);
+      throw error;
+    }
+  };
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!manualCode.trim()) {
       toast.error('Please enter a session code');
       return;
     }
 
+    // Validate format (XXX-XXXX)
+    const codeRegex = /^[A-Z0-9]{3}-[A-Z0-9]{4}$/;
+    if (!codeRegex.test(manualCode)) {
+      toast.error('Please enter a valid session code (e.g., ABC-1234)');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
     try {
-      const decodedData = JSON.parse(atob(manualCode));
-      onScanSuccess(decodedData);
-      setManualCode('');
-      toast.success('Session code entered successfully!');
-    } catch (error) {
-      toast.error('Invalid session code format');
-      if (onScanError) {
-        onScanError('Invalid session code format');
+      // Get student ID from auth context in a real app
+      const studentId = 'demo-student-123';
+      const timestamp = new Date().toISOString();
+      
+      // Validate the session code
+      const session = validateSessionCode(manualCode);
+      
+      // Record attendance in local storage
+      const attendanceKey = `attendance_${session.sessionId}`;
+      const attendance = JSON.parse(localStorage.getItem(attendanceKey) || '[]');
+      
+      // Check if already recorded
+      const existingRecord = attendance.find((r: any) => r.studentId === studentId);
+      if (existingRecord) {
+        toast.success('Attendance already recorded!');
+        return;
       }
+      
+      // Add new record
+      attendance.push({
+        studentId,
+        timestamp,
+        method: 'MANUAL',
+        status: 'PRESENT'
+      });
+      
+      localStorage.setItem(attendanceKey, JSON.stringify(attendance));
+      
+      // Call the success handler with the session data
+      onScanSuccess({
+        sessionId: session.sessionId,
+        courseCode: session.courseCode,
+        courseName: session.courseName,
+        facultyId: session.facultyId,
+        timestamp,
+        type: 'manual_attendance',
+        status: 'present'
+      });
+      
+      setManualCode('');
+      toast.success('Attendance recorded successfully!');
+    } catch (error) {
+      console.error('Error submitting manual attendance:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to record attendance';
+      toast.error(errorMessage);
+      if (onScanError) {
+        onScanError(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -176,13 +293,31 @@ export const QRScanner: React.FC<QRScannerProps> = ({
               <Label htmlFor="manual-code">Session Code</Label>
               <Input
                 id="manual-code"
-                placeholder="Enter the session code provided by your lecturer"
+                placeholder="Enter code (e.g., ABC-1234)"
                 value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
+                onChange={handleManualCodeChange}
+                maxLength={8} // 3 + 1 (hyphen) + 4
+                className="tracking-widest text-center font-mono uppercase"
+                disabled={isSubmitting}
               />
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                Enter the 7-character code (e.g., {generateSampleCode()})
+              </p>
             </div>
-            <Button type="submit" variant="outline" className="w-full">
-              Submit Code
+            <Button 
+              type="submit" 
+              variant="outline" 
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Recording...
+                </>
+              ) : (
+                'Submit Attendance'
+              )}
             </Button>
           </form>
         </CardContent>

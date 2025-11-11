@@ -16,21 +16,39 @@ export interface User {
   created_at: string;
   last_login?: string;
   status: 'active' | 'inactive' | 'suspended';
+  avatar?: string;
 }
 
 export interface Institution {
-  id: string;
+  id?: string;
   name: string;
-  type: 'University' | 'College' | 'School' | 'Training Center' | 'Other';
-  country: string;
-  primary_campus: string;
-  additional_campuses: string[];
-  admin_email: string;
-  created_at: string;
-  status: 'active' | 'inactive';
+  domain: string;
+  type: string;
+  address: {
+    street?: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode?: string;
+  };
+  contact: {
+    email: string;
+    phone: string;
+    website: string;
+  };
+  primaryCampus: string;
+  additionalCampuses: string[];
+  settings: {
+    attendanceThreshold: number;
+    sessionDuration: number;
+  };
+  isActive: boolean;
+  status: 'active' | 'inactive' | 'suspended';
   total_students: number;
   total_faculty: number;
   total_courses: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface Session {

@@ -23,11 +23,14 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { mockSessions, mockAttendance, mockUsers } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { toast } from 'sonner';
+import { generatePDFReport, FacultyReportData } from '@/lib/report-generator';
 
 const FacultyReports: React.FC = () => {
   const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('semester');
   const [selectedCourse, setSelectedCourse] = useState('all');
+  const [reportGenerated, setReportGenerated] = useState<Date>(new Date());
 
   // Get faculty data
   const facultySessions = mockSessions.filter(s => s.faculty_id === user?.id);
@@ -121,9 +124,44 @@ const FacultyReports: React.FC = () => {
                 <SelectItem value="year">This Year</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm">
+            <Button size="sm" onClick={async () => {
+              const reportData: FacultyReportData = {
+                title: 'Faculty Teaching Report',
+                subtitle: `${user?.name} - ${user?.employee_id || user?.id}`,
+                generatedAt: new Date(),
+                generatedBy: user?.name || 'Faculty',
+                period: {
+                  start: new Date(new Date().getFullYear(), 0, 1),
+                  end: new Date(),
+                  label: selectedPeriod
+                },
+                data: coursePerformance,
+                facultyId: user?.id || '',
+                facultyName: user?.name || '',
+                sessions: facultySessions.map(s => ({
+                  sessionId: s.id,
+                  courseCode: s.course_code,
+                  courseName: s.course_name,
+                  date: s.date,
+                  time: `${s.start_time} - ${s.end_time}`,
+                  totalStudents: s.enrolled_students,
+                  present: mockAttendance.filter(a => a.session_id === s.id && a.status === 'present').length,
+                  late: mockAttendance.filter(a => a.session_id === s.id && a.status === 'late').length,
+                  absent: s.enrolled_students - mockAttendance.filter(a => a.session_id === s.id).length,
+                  attendanceRate: s.enrolled_students > 0 
+                    ? (mockAttendance.filter(a => a.session_id === s.id).length / s.enrolled_students) * 100 
+                    : 0
+                })),
+                totalSessions: facultySessions.length,
+                averageAttendance: overallAttendance
+              };
+              
+              await generatePDFReport(reportData, 'faculty');
+              setReportGenerated(new Date());
+              toast.success('Report downloaded successfully!');
+            }}>
               <Download className="h-4 w-4 mr-2" />
-              Export PDF
+              Export Report
             </Button>
           </div>
         </div>
