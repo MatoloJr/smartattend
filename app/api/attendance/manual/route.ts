@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { connectToDatabase } from '@/lib/db';
+import Attendance from '@/models/Attendance';
+import Session from '@/models/Session';
+import Course from '@/models/Course';
+import Enrollment from '@/models/Enrollment';
+import { Types } from 'mongoose';
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +21,9 @@ export async function POST(req: Request) {
 
     const { sessionCode, studentId } = await req.json();
     const timestamp = new Date();
+    
+    // Connect to database
+    await connectToDatabase();
 
     // Validate session code format
     const codeRegex = /^[A-Z0-9]{3}-[A-Z0-9]{4}$/;
@@ -27,15 +35,11 @@ export async function POST(req: Request) {
     }
 
     // Find the session by code
-    const attendanceSession = await prisma.attendanceSession.findFirst({
-      where: {
-        sessionCode,
-        expiresAt: { gte: timestamp },
-      },
-      include: {
-        course: true,
-      },
-    });
+    const attendanceSession = await Session.findOne({
+      sessionCode,
+      expiresAt: { $gte: timestamp },
+      isActive: true
+    }).populate('course');
 
     if (!attendanceSession) {
       return NextResponse.json(
@@ -45,12 +49,10 @@ export async function POST(req: Request) {
     }
 
     // Check if student is enrolled in the course
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        courseId: attendanceSession.courseId,
-        studentId: session.user.id,
-        status: 'ACTIVE',
-      },
+    const enrollment = await Enrollment.findOne({
+      course: attendanceSession.course,
+      student: new Types.ObjectId(session.user.id),
+      status: 'ACTIVE'
     });
 
     if (!enrollment) {
@@ -61,11 +63,9 @@ export async function POST(req: Request) {
     }
 
     // Check for existing attendance record
-    const existingRecord = await prisma.attendanceRecord.findFirst({
-      where: {
-        sessionId: attendanceSession.id,
-        studentId: session.user.id,
-      },
+    const existingRecord = await Attendance.findOne({
+      session: attendanceSession._id,
+      student: session.user.id,
     });
 
     if (existingRecord) {
@@ -80,25 +80,22 @@ export async function POST(req: Request) {
     }
 
     // Create new attendance record
-    const attendanceRecord = await prisma.attendanceRecord.create({
-      data: {
-        sessionId: attendanceSession.id,
-        studentId: session.user.id,
-        status: 'PRESENT',
-        recordedAt: timestamp,
-        method: 'MANUAL',
-      },
+    const attendanceRecord = new Attendance({
+      session: attendanceSession._id,
+      student: session.user.id,
+      course: attendanceSession.course,
+      status: 'present',
+      recordedBy: session.user.id,
+      date: new Date(),
     });
 
-    // Update attendance stats
-    await prisma.attendanceSession.update({
-      where: { id: attendanceSession.id },
-      data: {
-        attendanceCount: {
-          increment: 1,
-        },
-      },
-    });
+    await attendanceRecord.save();
+
+    // Update session attendance count
+    await Session.updateOne(
+      { _id: attendanceSession._id },
+      { $inc: { attendanceCount: 1 } }
+    );
 
     return NextResponse.json({
       message: 'Attendance recorded successfully',

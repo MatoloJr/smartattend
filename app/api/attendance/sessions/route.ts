@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { connectToDatabase } from '@/lib/db';
+import Session from '@/models/Session';
+import Course from '@/models/Course';
+import { Types } from 'mongoose';
 
 export async function POST(req: Request) {
   try {
@@ -14,11 +17,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const { sessionId, courseCode, sessionCode, expiresAt } = await req.json();
+    const { courseCode, sessionCode, expiresAt } = await req.json();
     const expires = new Date(expiresAt);
 
+    // Connect to database
+    await connectToDatabase();
+
     // Validate input
-    if (!sessionId || !courseCode || !sessionCode || !expires) {
+    if (!courseCode || !sessionCode || !expires) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -26,43 +32,36 @@ export async function POST(req: Request) {
     }
 
     // Check if course exists and user is the instructor
-    const course = await prisma.course.findUnique({
-      where: { 
-        code: courseCode,
-        instructorId: session.user.id
-      },
+    const course = await Course.findOne({ 
+      code: courseCode,
+      instructor: session.user.id 
     });
-
+    
     if (!course) {
       return NextResponse.json(
-        { error: 'Course not found or access denied' },
+        { error: 'Course not found or you are not the instructor' },
         { status: 404 }
       );
     }
 
-    // Create or update the attendance session
-    const attendanceSession = await prisma.attendanceSession.upsert({
-      where: { id: sessionId },
-      update: {
-        sessionCode,
-        expiresAt: expires,
-        isActive: true,
-      },
-      create: {
-        id: sessionId,
-        courseId: course.id,
-        sessionCode,
-        expiresAt: expires,
-        isActive: true,
-        createdBy: session.user.id,
-      },
+    // Create new session
+    const newSession = new Session({
+      sessionCode,
+      course: course._id,
+      createdBy: session.user.id,
+      expiresAt: expires,
+      isActive: true,
     });
+
+    await newSession.save();
 
     return NextResponse.json({
-      message: 'Attendance session created successfully',
-      session: attendanceSession,
+      id: newSession._id,
+      sessionCode: newSession.sessionCode,
+      courseCode,
+      expiresAt: newSession.expiresAt,
+      isActive: newSession.isActive,
     });
-
   } catch (error) {
     console.error('Error creating attendance session:', error);
     return NextResponse.json(
@@ -74,24 +73,25 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const sessions = await prisma.attendanceSession.findMany({
-      where: {
-        expiresAt: { gte: new Date() },
-        isActive: true,
-      },
-      include: {
-        course: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    await connectToDatabase();
+    
+    const sessions = await Session.find({ isActive: true })
+      .sort({ expiresAt: 1 })
+      .populate('course', 'code name')
+      .lean();
 
-    return NextResponse.json({ sessions });
+    return NextResponse.json(sessions.map(session => ({
+      id: session._id,
+      sessionCode: session.sessionCode,
+      courseCode: session.course?.code,
+      courseName: session.course?.name,
+      expiresAt: session.expiresAt,
+      isActive: session.isActive,
+    })));
   } catch (error) {
-    console.error('Error fetching active sessions:', error);
+    console.error('Error fetching sessions:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch active sessions' },
+      { error: 'Failed to fetch sessions' },
       { status: 500 }
     );
   }
