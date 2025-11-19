@@ -6,6 +6,7 @@ export interface ISession extends Document {
   createdBy: mongoose.Types.ObjectId;
   expiresAt: Date;
   isActive: boolean;
+  attendanceCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,11 @@ const sessionSchema = new Schema<ISession>(
       type: Boolean, 
       default: true 
     },
+    attendanceCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
   },
   { 
     timestamps: true 
@@ -46,5 +52,7 @@ const sessionSchema = new Schema<ISession>(
 sessionSchema.index({ sessionCode: 1, isActive: 1 });
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index for auto-expiration
 
-export default mongoose.models.Session || 
+const Session = mongoose.models.Session || 
   mongoose.model<ISession>('Session', sessionSchema);
+
+export default Session;

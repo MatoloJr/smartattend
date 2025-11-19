@@ -1,21 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    esmExternals: 'loose',
+    optimizePackageImports: ['lucide-react'],
   },
-  output: 'export',
   poweredByHeader: false,
   compress: true,
-  optimizeFonts: true,
-  swcMinify: true,
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
+  images: { 
+    unoptimized: true 
   },
-  images: { unoptimized: true },
-  experimental: {
-    optimizeCss: true
+  compiler: {
+    // Enable SWC minification
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 };
 
-export default nextConfig
+export default nextConfig;

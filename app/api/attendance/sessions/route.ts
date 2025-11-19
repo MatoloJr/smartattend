@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     // Verify user is authenticated and is a faculty member
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== 'FACULTY') {
+    if (!session?.user || session.user.role !== 'faculty') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     // Check if course exists and user is the instructor
     const course = await Course.findOne({ 
       code: courseCode,
-      instructor: session.user.id 
+      faculty: session.user.id 
     });
     
     if (!course) {
