@@ -37,7 +37,8 @@ const Login: React.FC = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to login. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to login. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

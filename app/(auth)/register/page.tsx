@@ -612,9 +612,10 @@ const Register: React.FC = () => {
       toast.success('Registration successful! Please check your email to verify your account.');
       router.push('/login');
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
