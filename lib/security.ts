@@ -65,43 +65,16 @@ export async function generateDeviceFingerprint(): Promise<DeviceFingerprint> {
 }
 
 /**
- * Get client IP address using server-side API route
- * This avoids external API calls that can trigger Vercel security checkpoints
+ * Get client IP address (simplified - in production use server-side)
  */
 async function getClientIP(): Promise<string> {
   try {
-    // Use our own API route instead of external service
-    const response = await fetch('/api/ip', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Add cache control to avoid excessive requests
-      cache: 'no-store',
-    });
-
-    // Check if response is HTML (Vercel security checkpoint)
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('text/html')) {
-      console.warn('Received HTML response (possibly Vercel security checkpoint), using fallback IP');
-      return 'unknown';
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Verify we got JSON before parsing
-    if (!contentType?.includes('application/json')) {
-      console.warn('Expected JSON but got', contentType, '- using fallback IP');
-      return 'unknown';
-    }
-
+    // In production, call your backend API to get real IP
+    const response = await fetch('https://api.ipify.org?format=json');
     const data = await response.json();
-    return data.ip || 'unknown';
+    return data.ip;
   } catch (error) {
     console.error('Failed to get IP:', error);
-    // Return 'unknown' as fallback - device fingerprinting will still work
     return 'unknown';
   }
 }

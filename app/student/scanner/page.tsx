@@ -127,17 +127,6 @@ const StudentScanner: React.FC = () => {
         }),
       });
 
-      // Check for Vercel security checkpoint
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('text/html')) {
-        const text = await response.text();
-        if (text.includes('Vercel Security Checkpoint')) {
-          throw new Error(
-            'Security checkpoint detected. Please wait a moment and try again.'
-          );
-        }
-      }
-
       const data = await response.json();
 
       if (!response.ok) {
