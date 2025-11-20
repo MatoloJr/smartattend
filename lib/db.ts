@@ -50,3 +50,7 @@ export async function connectToDatabase() {
   return cached.conn;
 }
 
+// Add default export for backward compatibility
+const db = { connectToDatabase };
+export default db;
+

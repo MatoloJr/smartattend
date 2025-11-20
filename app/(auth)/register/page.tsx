@@ -612,10 +612,9 @@ const Register: React.FC = () => {
       toast.success('Registration successful! Please check your email to verify your account.');
       router.push('/login');
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
-      toast.error(errorMessage);
+      toast.error(error.message || 'Failed to create account. Please try again.');
     }
   };
 
@@ -838,10 +837,11 @@ const Register: React.FC = () => {
                         <div className="w-1/2 pr-2">
                           <Label htmlFor={`additional-campus-country-${index}`}>Country</Label>
                           <Select
+                            id={`additional-campus-country-${index}`}
                             value={campus.country || institutionData.country}
                             onValueChange={(value) => updateCampus(index, 'country', value)}
                           >
-                            <SelectTrigger id={`additional-campus-country-${index}`}>
+                            <SelectTrigger>
                               <SelectValue placeholder="Select country" />
                             </SelectTrigger>
                             <SelectContent>

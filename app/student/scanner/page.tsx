@@ -101,47 +101,55 @@ const StudentScanner: React.FC = () => {
   const submitAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!scannedSession || !studentId.trim()) {
-      toast.error('Please provide your student ID');
+    if (!scannedSession) {
+      toast.error('No session data found');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Generate device fingerprint for secure tracking
-      const deviceFingerprint = await generateDeviceFingerprint();
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const attendanceRecord = {
-        id: `att_${Date.now()}`,
-        session_id: scannedSession.sessionId,
-        student_id: user?.id,
-        student_name: user?.name,
-        student_number: studentId,
-        timestamp: new Date().toISOString(),
-        status: 'present',
-        scan_method: 'qr_code',
-        location_verified: true,
-        device_fingerprint: deviceFingerprint.id,
-        ip_address: deviceFingerprint.ipAddress,
-        nonce: (scannedSession as any).nonce || null,
-        qr_type: scannedSession.type
-      };
+      // Extract session code or session ID from scanned data
+      const sessionCode = scannedSession.sessionId?.includes('-') 
+        ? scannedSession.sessionId 
+        : null;
+      const sessionId = !sessionCode ? scannedSession.sessionId : null;
 
-      console.log('Attendance recorded:', attendanceRecord);
-      
-      // In production, send to backend API
-      // await fetch('/api/attendance', { method: 'POST', body: JSON.stringify(attendanceRecord) });
-      
+      // Call the API endpoint
+      const response = await fetch('/api/attendance/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionCode: sessionCode,
+          sessionId: sessionId,
+        }),
+      });
+
+      // Check for Vercel security checkpoint
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/html')) {
+        const text = await response.text();
+        if (text.includes('Vercel Security Checkpoint')) {
+          throw new Error(
+            'Security checkpoint detected. Please wait a moment and try again.'
+          );
+        }
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit attendance');
+      }
+
       setAttendanceSubmitted(true);
-      toast.success('Attendance marked successfully! ✓');
+      toast.success(data.message || 'Attendance marked successfully! ✓');
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting attendance:', error);
-      toast.error('Failed to submit attendance. Please try again.');
+      toast.error(error.message || 'Failed to submit attendance. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

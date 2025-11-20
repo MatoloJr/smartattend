@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if course exists and user is the instructor
+    // Check if course exists and user is the faculty/instructor
     const course = await Course.findOne({ 
       code: courseCode,
       faculty: session.user.id 

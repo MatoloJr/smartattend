@@ -31,7 +31,5 @@ const attendanceSchema = new Schema<IAttendance>(
 attendanceSchema.index({ student: 1, session: 1 }, { unique: true });
 attendanceSchema.index({ student: 1, course: 1, date: 1 });
 
-const Attendance = mongoose.models.Attendance || 
+export default mongoose.models.Attendance || 
   mongoose.model<IAttendance>('Attendance', attendanceSchema);
-
-export default Attendance;

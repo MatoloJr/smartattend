@@ -52,7 +52,5 @@ const sessionSchema = new Schema<ISession>(
 sessionSchema.index({ sessionCode: 1, isActive: 1 });
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index for auto-expiration
 
-const Session = mongoose.models.Session || 
+export default mongoose.models.Session || 
   mongoose.model<ISession>('Session', sessionSchema);
-
-export default Session;

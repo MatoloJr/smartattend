@@ -178,47 +178,36 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Get student ID from auth context in a real app
-      const studentId = 'demo-student-123';
-      const timestamp = new Date().toISOString();
-      
-      // Validate the session code
-      const session = validateSessionCode(manualCode);
-      
-      // Record attendance in local storage
-      const attendanceKey = `attendance_${session.sessionId}`;
-      const attendance = JSON.parse(localStorage.getItem(attendanceKey) || '[]');
-      
-      // Check if already recorded
-      const existingRecord = attendance.find((r: any) => r.studentId === studentId);
-      if (existingRecord) {
-        toast.success('Attendance already recorded!');
-        return;
-      }
-      
-      // Add new record
-      attendance.push({
-        studentId,
-        timestamp,
-        method: 'MANUAL',
-        status: 'PRESENT'
+      // Call the API endpoint to validate and get session info
+      const response = await fetch('/api/attendance/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionCode: manualCode,
+        }),
       });
-      
-      localStorage.setItem(attendanceKey, JSON.stringify(attendance));
-      
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to record attendance');
+      }
+
       // Call the success handler with the session data
       onScanSuccess({
-        sessionId: session.sessionId,
-        courseCode: session.courseCode,
-        courseName: session.courseName,
-        facultyId: session.facultyId,
-        timestamp,
+        sessionId: data.session?._id || manualCode,
+        courseCode: data.session?.course?.code || '',
+        courseName: data.session?.course?.name || '',
+        facultyId: data.session?.createdBy || '',
+        timestamp: new Date().toISOString(),
         type: 'manual_attendance',
-        status: 'present'
+        status: data.status || 'present'
       });
       
       setManualCode('');
-      toast.success('Attendance recorded successfully!');
+      toast.success(data.message || 'Attendance recorded successfully!');
     } catch (error) {
       console.error('Error submitting manual attendance:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to record attendance';

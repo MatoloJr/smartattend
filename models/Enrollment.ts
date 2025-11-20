@@ -46,7 +46,5 @@ const EnrollmentSchema = new Schema<IEnrollment>({
 // Add compound index to prevent duplicate enrollments
 EnrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
 
-const Enrollment = mongoose.models.Enrollment || 
+export default mongoose.models.Enrollment || 
   mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);
-
-export default Enrollment;

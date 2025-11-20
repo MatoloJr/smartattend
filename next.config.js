@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizeCss: true
   },
   poweredByHeader: false,
   compress: true,
@@ -13,6 +13,8 @@ const nextConfig = {
     // Enable SWC minification
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Turbopack configuration (Next.js 16 default)
+  turbopack: {},
 };
 
 export default nextConfig;
