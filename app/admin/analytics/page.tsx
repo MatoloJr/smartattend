@@ -32,29 +32,44 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip 
+  Tooltip,
+  TooltipProps
 } from 'recharts';
 
+interface CampusData {
+  name: string;
+  value: number;
+  students: number;
+}
+
+interface AttendanceTrend {
+  date: string;
+  present: number;
+  absent: number;
+  late: number;
+  efficiency: number;
+}
+
 const AdminAnalytics: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const [selectedMetric, setSelectedMetric] = useState('attendance');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('30d');
+  const [selectedMetric, setSelectedMetric] = useState<string>('attendance');
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
-  const campusDistribution = [
+  const campusDistribution: CampusData[] = [
     { name: 'Main Campus', value: 68, students: 8736 },
     { name: 'North Campus', value: 22, students: 2826 },
     { name: 'Downtown', value: 10, students: 1285 }
   ];
 
-  const attendanceTrends = mockAnalytics.slice(-7).map(day => ({
+  const attendanceTrends: AttendanceTrend[] = mockAnalytics.slice(-7).map(day => ({
     ...day,
     efficiency: Math.round((day.present / (day.present + day.absent + day.late)) * 100)
   }));
 
-  const CustomPieTooltip = ({ active, payload }: any) => {
+  const CustomPieTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const data = payload[0].payload as CampusData;
       return (
         <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
           <p className="font-medium text-gray-900 dark:text-white">{data.name}</p>
@@ -186,7 +201,10 @@ const AdminAnalytics: React.FC = () => {
                       dataKey="value"
                     >
                       {campusDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]} 
+                        />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />
@@ -195,7 +213,7 @@ const AdminAnalytics: React.FC = () => {
               </div>
               <div className="space-y-2 mt-4">
                 {campusDistribution.map((campus, index) => (
-                  <div key={campus.name} className="flex items-center justify-between">
+                  <div key={`campus-${index}`} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-3 h-3 rounded-full" 
@@ -221,7 +239,7 @@ const AdminAnalytics: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {mockTimePatterns.slice(0, 6).map((pattern, index) => (
-                  <div key={pattern.time} className="space-y-1">
+                  <div key={`pattern-${index}`} className="space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">{pattern.time}</span>
                       <span className="text-sm">{pattern.attendance}%</span>
@@ -261,16 +279,16 @@ const AdminAnalytics: React.FC = () => {
                     <XAxis 
                       dataKey="date" 
                       tick={{ fontSize: 12 }}
-                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short' })}
+                      tickFormatter={(value: string) => new Date(value).toLocaleDateString('en-US', { weekday: 'short' })}
                     />
                     <YAxis 
                       tick={{ fontSize: 12 }}
                       domain={[0, 100]}
-                      tickFormatter={(value) => `${value}%`}
+                      tickFormatter={(value: number) => `${value}%`}
                     />
                     <Tooltip 
-                      formatter={(value: any) => [`${value}%`, 'Efficiency']}
-                      labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                      formatter={(value: number) => [`${value}%`, 'Efficiency']}
+                      labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
                     />
                     <Area
                       type="monotone"
@@ -324,7 +342,7 @@ const AdminAnalytics: React.FC = () => {
                 </thead>
                 <tbody>
                   {mockDepartmentStats.map((dept, index) => (
-                    <tr key={dept.department} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr key={`dept-${index}`} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div 
