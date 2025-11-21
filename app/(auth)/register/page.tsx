@@ -837,11 +837,10 @@ const Register: React.FC = () => {
                         <div className="w-1/2 pr-2">
                           <Label htmlFor={`additional-campus-country-${index}`}>Country</Label>
                           <Select
-                            id={`additional-campus-country-${index}`}
                             value={campus.country || institutionData.country}
                             onValueChange={(value) => updateCampus(index, 'country', value)}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id={`additional-campus-country-${index}`}>
                               <SelectValue placeholder="Select country" />
                             </SelectTrigger>
                             <SelectContent>

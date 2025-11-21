@@ -210,7 +210,7 @@ const AdminCourses: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<CourseFormData | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<ApiCourse | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   
   // Form state
@@ -302,8 +302,7 @@ const AdminCourses: React.FC = () => {
       const matchesSearch = 
         course.code.toLowerCase().includes(searchLower) ||
         course.name.toLowerCase().includes(searchLower) ||
-        course.faculty_name.toLowerCase().includes(searchLower) ||
-        (course.description && course.description.toLowerCase().includes(searchLower));
+        course.faculty_name.toLowerCase().includes(searchLower);
       
       const matchesDepartment = departmentFilter === 'all' || course.department === departmentFilter;
       const matchesStatus = statusFilter === 'all' || course.status === statusFilter;
@@ -827,11 +826,11 @@ const AdminCourses: React.FC = () => {
                   {/* Course Details */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-500" />
+                      <ClockIcon className="h-4 w-4 text-gray-500" />
                       <span>{course.credits} Credits</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <CalendarIcon className="h-4 w-4 text-gray-500" />
                       <span>{course.duration} mins</span>
                     </div>
                   </div>
@@ -1285,13 +1284,13 @@ const AdminCourses: React.FC = () => {
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
-                      style={{ 
-                        width: `${Math.round((selectedCourse.enrolled_students / Math.max(1, selectedCourse.max_capacity)) * 100)}%` 
+                      style={{
+                        width: `${Math.round(((selectedCourse.enrolled_students || 0) / Math.max(1, selectedCourse.max_capacity || 1)) * 100)}%`
                       }}
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {Math.round((selectedCourse.enrolled_students / Math.max(1, selectedCourse.max_capacity)) * 100)}% capacity
+                    {Math.round(((selectedCourse.enrolled_students || 0) / Math.max(1, selectedCourse.max_capacity || 1)) * 100)}% capacity
                   </div>
                 </div>
               </div>

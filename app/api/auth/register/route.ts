@@ -56,7 +56,8 @@ export async function POST(request: Request) {
         console.log('New institution created with ID:', institution._id);
       } catch (error) {
         console.error('Error creating institution:', error);
-        throw new Error(`Failed to create institution: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to create institution: ${errorMessage}`);
       }
     }
 

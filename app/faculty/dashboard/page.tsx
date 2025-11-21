@@ -290,6 +290,7 @@ const FacultyDashboard: React.FC = () => {
               courseCode={todaysSession.course_code}
               courseName={todaysSession.course_name}
               facultyName={todaysSession.faculty_name}
+              facultyId={user?.id || ''}
               timestamp={activeSession.qrTimestamp}
               onRegenerateCode={regenerateQR}
             />

@@ -310,7 +310,7 @@ const FacultyAnalytics: React.FC = () => {
                     <Legend />
                     <Bar dataKey="avgAttendance" name="Average Attendance" fill="#8884d8">
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${entry.name}-${String(index)}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -321,15 +321,15 @@ const FacultyAnalytics: React.FC = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => 
-                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      label={({ name, percent }) =>
+                        `${name}: ${((percent || 0) * 100).toFixed(0)}%`
                       }
                       outerRadius={150}
                       fill="#8884d8"
                       dataKey="value"
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${entry.name}-${String(index)}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip 
