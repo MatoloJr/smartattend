@@ -1,6 +1,9 @@
 import mongoose, { ConnectOptions } from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smartattend';//for deployment only use process.env.MONGODB_URI
+// MongoDB connection string - uses environment variable for Atlas, falls back to local for development
+// For MongoDB Atlas: Set MONGODB_URI in .env.local file
+// For local MongoDB: Uses default localhost connection (only for local development)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smartattend';
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable');

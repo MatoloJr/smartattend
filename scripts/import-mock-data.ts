@@ -1,19 +1,29 @@
-import { connectToDatabase } from '../lib/db';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Load environment variables from .env.local
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env.local') });
+
+import { connectToDatabase } from '../lib/db.js';
 import { 
   mockUsers, 
   mockInstitutions, 
   mockSessions, 
   mockAnalytics,
-  mockDepartmentStats
-} from '../lib/mock-data';
+  mockDepartmentStats,
+  mockAttendance
+} from '../lib/mock-data.js';
 
 // Define any missing mock data variables
-const mockAttendanceRecords: any[] = [];
+const mockAttendanceRecords: any[] = mockAttendance || [];
 const mockApologies: any[] = [];
-import User from '../models/User';
-import Institution from '../models/Institution';
-import Course from '../models/Course';
-import Attendance from '../models/Attendance';
+import User from '../models/User.js';
+import Institution from '../models/Institution.js';
+import Course from '../models/Course.js';
+import Attendance from '../models/Attendance.js';
 
 // Helper to get unique courses from sessions
 function getUniqueCourses(sessions: any[], facultyId: string) {
@@ -74,7 +84,40 @@ const importMockData = async () => {
 
     // Import Institutions
     console.log('🏛️ Importing institutions...');
-    const institutions = await Institution.insertMany(mockInstitutions);
+    // Transform mock institutions to match the model schema
+    const transformedInstitutions = mockInstitutions.map(inst => ({
+      name: inst.name,
+      domain: inst.domain,
+      address: {
+        city: inst.address.city,
+        state: inst.address.state,
+        country: inst.address.country,
+        street: inst.address.street,
+        postalCode: inst.address.postalCode,
+      },
+      contact: {
+        email: inst.contact.email,
+        phone: inst.contact.phone,
+        website: inst.contact.website,
+      },
+      primaryCampus: {
+        name: typeof inst.primaryCampus === 'string' ? inst.primaryCampus : inst.primaryCampus.name || 'Main Campus',
+        location: inst.address.city 
+          ? `${inst.address.street || ''} ${inst.address.city}, ${inst.address.state}`.trim()
+          : `${inst.address.city}, ${inst.address.state}`,
+        country: inst.address.country,
+      },
+      additionalCampuses: inst.additionalCampuses?.map((campus: string) => ({
+        name: campus,
+        location: inst.address.city || '',
+        country: inst.address.country,
+      })) || [],
+      settings: inst.settings,
+      isActive: inst.isActive,
+      createdAt: inst.createdAt ? new Date(inst.createdAt) : new Date(),
+      updatedAt: inst.updatedAt ? new Date(inst.updatedAt) : new Date(),
+    }));
+    const institutions = await Institution.insertMany(transformedInstitutions);
     
     // Create a map of institution names to their IDs
     const institutionMap = new Map();

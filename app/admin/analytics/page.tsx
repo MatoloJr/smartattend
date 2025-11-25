@@ -52,16 +52,7 @@ const AdminAnalytics: React.FC = () => {
     efficiency: Math.round((day.present / (day.present + day.absent + day.late)) * 100)
   }));
 
-  const CustomPieTooltip: React.FC<{
-    active?: boolean;
-    payload?: Array<{
-      payload: {
-        name: string;
-        value: number;
-        students: number;
-      };
-    }>;
-  }> = ({ active, payload }) => {
+  const CustomPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (

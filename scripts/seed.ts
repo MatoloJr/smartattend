@@ -1,3 +1,12 @@
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Load environment variables from .env.local
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env.local') });
+
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Institution from '../models/Institution.js';
@@ -30,6 +39,11 @@ const seedDatabase = async () => {
         phone: '+1234567890',
         website: 'https://sample.edu',
       },
+      primaryCampus: {
+        name: 'Main Campus',
+        location: '123 University Ave, City, State',
+        country: 'Country',
+      },
     });
 
     // Create admin user
@@ -41,10 +55,19 @@ const seedDatabase = async () => {
       name: 'Admin User',
     });
 
-    console.log('Database seeded successfully!');
+    console.log('✅ Database seeded successfully!');
+    console.log(`📝 Created institution: ${institution.name}`);
+    console.log(`👤 Created admin user: ${admin.email}`);
+    console.log(`🔑 Password: admin123`);
     process.exit(0);
-  } catch (error) {
-    console.error('Error seeding database:', error);
+  } catch (error: any) {
+    console.error('❌ Error seeding database:', error?.message || error);
+    if (error?.errors) {
+      console.error('Validation errors:');
+      Object.keys(error.errors).forEach(key => {
+        console.error(`  - ${key}: ${error.errors[key].message}`);
+      });
+    }
     process.exit(1);
   }
 };

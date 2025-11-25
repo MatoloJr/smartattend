@@ -13,7 +13,7 @@ export async function GET() {
       .lean();
 
     // Transform the data to match the frontend interface
-    const formattedCourses = courses.map((course: any) => ({
+    const formattedCourses = courses.map((course: ICourse & { _id: any }) => ({
       id: course._id.toString(),
       code: course.code,
       name: course.name,
