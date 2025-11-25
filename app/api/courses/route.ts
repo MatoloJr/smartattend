@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
+import { LeanDocument, Types } from 'mongoose';
 import { connectToDatabase } from '@/lib/db';
 import Course, { ICourse } from '@/models/Course';
+
+type CourseWithFaculty = LeanDocument<ICourse> & {
+  faculty?: {
+    _id?: Types.ObjectId;
+    name?: string;
+  };
+};
 
 export async function GET() {
   try {
@@ -10,10 +18,10 @@ export async function GET() {
     // Fetch courses from the database with faculty information
     const courses = await Course.find({})
       .populate('faculty', 'id name')
-      .lean();
+      .lean<CourseWithFaculty>();
 
     // Transform the data to match the frontend interface
-    const formattedCourses = courses.map((course: ICourse & { _id: any }) => ({
+    const formattedCourses = courses.map((course) => ({
       id: course._id.toString(),
       code: course.code,
       name: course.name,
