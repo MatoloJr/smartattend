@@ -101,7 +101,7 @@ const importMockData = async () => {
         website: inst.contact.website,
       },
       primaryCampus: {
-        name: typeof inst.primaryCampus === 'string' ? inst.primaryCampus : inst.primaryCampus.name || 'Main Campus',
+        name: inst.primaryCampus || 'Main Campus',
         location: inst.address.city 
           ? `${inst.address.street || ''} ${inst.address.city}, ${inst.address.state}`.trim()
           : `${inst.address.city}, ${inst.address.state}`,
@@ -142,7 +142,7 @@ const importMockData = async () => {
       throw new Error('No faculty member found to assign to courses');
     }
     
-    const uniqueCourses = getUniqueCourses(mockSessions, faculty._id);
+    const uniqueCourses = getUniqueCourses(mockSessions, faculty._id.toString());
     const courses = await Course.insertMany(uniqueCourses);
     
     // Update faculty member with the courses they're teaching

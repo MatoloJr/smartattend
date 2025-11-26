@@ -499,3 +499,5 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
     </Card>
   );
 };
+
+export default QRGenerator;

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import InstitutionModel from '@/models/Institution';
 import { DashboardLayout } from '@/components/common/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,7 +61,7 @@ const AdminInstitutions: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [selectedInstitution, setSelectedInstitution] = useState<InstanceType<typeof InstitutionModel> | null>(null);
+  const [selectedInstitution, setSelectedInstitution] = useState<InstitutionType | null>(null);
   
   // State for new institution form
   const [newInstitution, setNewInstitution] = useState<InstitutionFormData>({
@@ -769,7 +768,7 @@ const AdminInstitutions: React.FC = () => {
             <DialogHeader>
               <DialogTitle>{selectedInstitution.name}</DialogTitle>
               <DialogDescription>
-                {selectedInstitution.type} • {selectedInstitution.country}
+                {selectedInstitution.type} • {selectedInstitution.address?.country || 'N/A'}
               </DialogDescription>
             </DialogHeader>
             
@@ -779,7 +778,7 @@ const AdminInstitutions: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Admin Email</p>
-                    <p>{selectedInstitution.admin_email}</p>
+                    <p>{selectedInstitution.contact?.email || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Status</p>
@@ -796,14 +795,14 @@ const AdminInstitutions: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <span className="font-medium">Primary:</span>
-                    <span>{selectedInstitution.primary_campus}</span>
+                    <span>{selectedInstitution.primaryCampus}</span>
                   </div>
                   
-                  {selectedInstitution.additional_campuses.length > 0 && (
+                  {selectedInstitution.additionalCampuses.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-gray-500 mb-1">Additional Campuses:</p>
                       <ul className="list-disc pl-5 space-y-1">
-                        {selectedInstitution.additional_campuses.map((campus: string, index: number) => (
+                        {selectedInstitution.additionalCampuses.map((campus: string, index: number) => (
                           <li key={index}>{campus}</li>
                         ))}
                       </ul>
@@ -834,7 +833,7 @@ const AdminInstitutions: React.FC = () => {
               </div>
               
               <div className="text-sm text-gray-500">
-                <p>Created on {new Date(selectedInstitution.created_at).toLocaleDateString()}</p>
+                <p>Created on {selectedInstitution.createdAt ? new Date(selectedInstitution.createdAt).toLocaleDateString() : 'Date unknown'}</p>
               </div>
             </div>
             
@@ -847,10 +846,10 @@ const AdminInstitutions: React.FC = () => {
                   setNewInstitution({
                     name: selectedInstitution.name,
                     type: selectedInstitution.type,
-                    country: selectedInstitution.country,
-                    primary_campus: selectedInstitution.primary_campus,
-                    additional_campuses: [...selectedInstitution.additional_campuses],
-                    admin_email: selectedInstitution.admin_email,
+                    country: selectedInstitution.address?.country || '',
+                    primary_campus: selectedInstitution.primaryCampus,
+                    additional_campuses: [...selectedInstitution.additionalCampuses],
+                    admin_email: selectedInstitution.contact?.email || '',
                     status: selectedInstitution.status as 'active' | 'inactive' | 'suspended'
                   });
                   setSelectedInstitution(null);

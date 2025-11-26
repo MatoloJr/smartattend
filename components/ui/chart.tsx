@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
+import type { TooltipContentProps, LegendPayload, LegendProps } from 'recharts';
 
 import { cn } from '@/lib/utils';
 
@@ -102,19 +103,18 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    React.ComponentProps<'div'> & {
+type ChartTooltipBaseProps = TooltipContentProps<number, string> &
+  React.ComponentProps<'div'> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
       indicator?: 'line' | 'dot' | 'dashed';
       nameKey?: string;
       labelKey?: string;
-    }
->(
-  (
-    {
+    };
+
+const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipBaseProps>(
+  (props, ref) => {
+    const {
       active,
       payload,
       className,
@@ -128,9 +128,8 @@ const ChartTooltipContent = React.forwardRef<
       color,
       nameKey,
       labelKey,
-    },
-    ref
-  ) => {
+      ...rest
+    } = props;
     const { config } = useChart();
 
     const tooltipLabel = React.useMemo(() => {
@@ -182,6 +181,7 @@ const ChartTooltipContent = React.forwardRef<
           'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
           className
         )}
+        {...rest}
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
@@ -258,18 +258,16 @@ ChartTooltipContent.displayName = 'ChartTooltip';
 
 const ChartLegend = RechartsPrimitive.Legend;
 
-const ChartLegendContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<'div'> &
-    Pick<RechartsPrimitive.LegendProps, 'payload' | 'verticalAlign'> & {
-      hideIcon?: boolean;
-      nameKey?: string;
-    }
->(
-  (
-    { className, hideIcon = false, payload, verticalAlign = 'bottom', nameKey },
-    ref
-  ) => {
+type ChartLegendContentProps = {
+  className?: string;
+  hideIcon?: boolean;
+  nameKey?: string;
+  payload?: ReadonlyArray<LegendPayload>;
+  verticalAlign?: LegendProps['verticalAlign'];
+};
+
+const ChartLegendContent = React.forwardRef<HTMLDivElement, ChartLegendContentProps>(
+  ({ className, hideIcon = false, payload, verticalAlign = 'bottom', nameKey }, ref) => {
     const { config } = useChart();
 
     if (!payload?.length) {
@@ -285,7 +283,7 @@ const ChartLegendContent = React.forwardRef<
           className
         )}
       >
-        {payload.map((item) => {
+        {payload.map((item: LegendPayload) => {
           const key = `${nameKey || item.dataKey || 'value'}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 

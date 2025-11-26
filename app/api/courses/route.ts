@@ -1,14 +1,32 @@
 import { NextResponse } from 'next/server';
-import { LeanDocument, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { connectToDatabase } from '@/lib/db';
-import Course, { ICourse } from '@/models/Course';
+import Course from '@/models/Course';
 
-type CourseWithFaculty = LeanDocument<ICourse> & {
+interface CourseWithFaculty {
+  _id: Types.ObjectId;
+  code: string;
+  name: string;
+  department: string;
   faculty?: {
     _id?: Types.ObjectId;
     name?: string;
   };
-};
+  credits: number;
+  duration: number;
+  enrolledStudents?: number;
+  maxCapacity?: number;
+  schedules?: {
+    day: string;
+    startTime: string;
+    endTime: string;
+    location?: string;
+  }[];
+  semester: string;
+  year: number;
+  status: 'active' | 'inactive' | 'completed';
+  createdAt?: Date;
+}
 
 export async function GET() {
   try {
@@ -18,21 +36,21 @@ export async function GET() {
     // Fetch courses from the database with faculty information
     const courses = await Course.find({})
       .populate('faculty', 'id name')
-      .lean<CourseWithFaculty>();
+      .lean<CourseWithFaculty[]>();
 
     // Transform the data to match the frontend interface
     const formattedCourses = courses.map((course) => ({
-      id: course._id.toString(),
+      id: course._id?.toString() ?? '',
       code: course.code,
       name: course.name,
       department: course.department,
       faculty_id: course.faculty?._id?.toString() || '',
-      faculty_name: (course.faculty as any)?.name || 'Unassigned',
+      faculty_name: course.faculty?.name || 'Unassigned',
       credits: course.credits,
       duration: course.duration,
       enrolled_students: course.enrolledStudents || 0,
       max_capacity: course.maxCapacity || 0,
-      schedule: course.schedules?.map((schedule: any) => ({
+      schedule: course.schedules?.map((schedule) => ({
         day: schedule.day,
         start_time: schedule.startTime,
         end_time: schedule.endTime,

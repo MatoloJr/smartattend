@@ -1,4 +1,4 @@
-import connectToDatabase from './db';
+import * as db from './db';
 import User, { IUser } from '@/models/User';
 import Institution, { IInstitution } from '@/models/Institution';
 
@@ -7,7 +7,7 @@ import Institution, { IInstitution } from '@/models/Institution';
  */
 export async function initDatabase() {
   try {
-    await connectToDatabase();
+    await db.connectToDatabase();
     console.log('Database connected successfully');
   } catch (error) {
     console.error('Database connection error:', error);

@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import User from '@/models/User';
+import User, { IUser } from '@/models/User';
 import { connectToDatabase } from './db';
 
 // Extend the User type to include additional fields
@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
         await connectToDatabase();
         
         // Find user by email
-        const user = await User.findOne({ email: credentials.email.toLowerCase() });
+        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password') as IUser | null;
         
         if (!user || !user.isActive) {
           throw new Error('Invalid credentials or account disabled');

@@ -25,14 +25,10 @@ const userFormSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
   }),
-  role: z.enum(['student', 'faculty', 'admin', 'super_admin'], {
-    required_error: 'Please select a role.',
-  }),
-  status: z.enum(['active', 'inactive', 'suspended'], {
-    required_error: 'Please select a status.',
-  }),
-  sendWelcomeEmail: z.boolean().default(false),
-  generatePassword: z.boolean().default(true),
+  role: z.enum(['student', 'faculty', 'admin', 'super_admin'] as const),
+  status: z.enum(['active', 'inactive', 'suspended'] as const),
+  sendWelcomeEmail: z.boolean(),
+  generatePassword: z.boolean(),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
   department: z.string().optional(),
@@ -336,7 +332,7 @@ export function UserForm({ defaultValues, onSuccess, onCancel }: UserFormProps) 
                         <div className="space-y-1 leading-none">
                           <FormLabel>Generate a random password</FormLabel>
                           <FormDescription>
-                            A secure password will be generated and sent to the user's email.
+                            A secure password will be generated and sent to the user&apos;s email.
                           </FormDescription>
                         </div>
                       </FormItem>

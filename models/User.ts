@@ -1,8 +1,29 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-const userSchema = new mongoose.Schema({
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  email: string;
+  password: string;
+  role: 'student' | 'faculty' | 'admin';
+  institutionId: Types.ObjectId;
+  name: string;
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
+  createdAt: Date;
+  lastLogin?: Date;
+  isActive: boolean;
+  avatar?: string;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  generateVerificationToken(): string;
+  generatePasswordResetToken(): string;
+}
+
+const userSchema = new Schema<IUser>({
   email: {
     type: String,
     required: true,
@@ -72,7 +93,7 @@ userSchema.index({ emailVerificationToken: 1 }, { sparse: true });
 userSchema.index({ passwordResetToken: 1 }, { sparse: true });
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre<IUser>('save', async function (next) {
   if (!this.isModified('password')) return next();
   
   try {
@@ -85,12 +106,12 @@ userSchema.pre('save', async function (next) {
 });
 
 // Method to compare passwords
-userSchema.methods.comparePassword = async function (candidatePassword: string) {
+userSchema.methods.comparePassword = async function (this: IUser, candidatePassword: string) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Generate email verification token
-userSchema.methods.generateVerificationToken = function() {
+userSchema.methods.generateVerificationToken = function(this: IUser) {
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = crypto
     .createHash('sha256')
@@ -98,13 +119,13 @@ userSchema.methods.generateVerificationToken = function() {
     .digest('hex');
   
   // Token expires in 24 hours
-  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
   
   return token;
 };
 
 // Generate password reset token
-userSchema.methods.generatePasswordResetToken = function() {
+userSchema.methods.generatePasswordResetToken = function(this: IUser) {
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = crypto
     .createHash('sha256')
@@ -112,9 +133,10 @@ userSchema.methods.generatePasswordResetToken = function() {
     .digest('hex');
   
   // Token expires in 1 hour
-  this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
+  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
   
   return resetToken;
 };
 
-export default mongoose.models.User || mongoose.model('User', userSchema);
+export default (mongoose.models.User as mongoose.Model<IUser>) ||
+  mongoose.model<IUser>('User', userSchema);

@@ -117,3 +117,5 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({
     </Card>
   );
 };
+
+export default AttendanceChart;

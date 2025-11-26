@@ -1,6 +1,40 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const institutionSchema = new mongoose.Schema({
+export interface IInstitution extends Document {
+  name: string;
+  domain: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
+  contact?: {
+    email?: string;
+    phone?: string;
+    website?: string;
+  };
+  primaryCampus: {
+    name: string;
+    location: string;
+    country: string;
+  };
+  additionalCampuses?: Array<{
+    name?: string;
+    location?: string;
+    country?: string;
+  }>;
+  settings?: {
+    attendanceThreshold?: number;
+    sessionDuration?: number;
+  };
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const institutionSchema = new Schema<IInstitution>({
   name: {
     type: String,
     required: true,
@@ -72,9 +106,10 @@ const institutionSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt field before saving
-institutionSchema.pre('save', function(next) {
+institutionSchema.pre<IInstitution>('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-export default mongoose.models.Institution || mongoose.model('Institution', institutionSchema);
+export default (mongoose.models.Institution as mongoose.Model<IInstitution>) ||
+  mongoose.model<IInstitution>('Institution', institutionSchema);

@@ -20,7 +20,7 @@ export function exportData<T extends Record<string, any>>(
   data: T[], 
   options: ExportOptions = {}
 ) {
-  const { filename, includeHeaders, format, columns } = { ...defaultOptions, ...options };
+  const { filename, includeHeaders, format: exportFormat, columns } = { ...defaultOptions, ...options };
   const timestamp = format(new Date(), 'yyyyMMdd-HHmmss');
   const actualFilename = `${filename}-${timestamp}`;
   
@@ -38,11 +38,11 @@ export function exportData<T extends Record<string, any>>(
     : data;
 
   // Handle different export formats
-  if (format === 'csv') {
+  if (exportFormat === 'csv') {
     exportToCSV(processedData, actualFilename, includeHeaders);
-  } else if (format === 'excel') {
+  } else if (exportFormat === 'excel') {
     exportToExcel(processedData, actualFilename, includeHeaders);
-  } else if (format === 'pdf') {
+  } else if (exportFormat === 'pdf') {
     exportToPDF(processedData, actualFilename, includeHeaders);
   } else {
     // Default to JSON

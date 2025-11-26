@@ -81,3 +81,5 @@ export const DepartmentChart: React.FC<DepartmentChartProps> = ({
     </Card>
   );
 };
+
+export default DepartmentChart;
