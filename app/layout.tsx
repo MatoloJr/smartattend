@@ -14,8 +14,9 @@ export const metadata: Metadata = {
   description: 'Modern QR-based attendance management system for educational institutions',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
-    apple: '/icons/apple-touch-icon.png',
+    icon: '/smartattend.png',
+    shortcut: '/smartattend.png',
+    apple: '/smartattend.png',
   },
   other: {
     'mobile-web-app-capable': 'yes'

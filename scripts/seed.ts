@@ -8,10 +8,10 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env.local') });
 
 import mongoose from 'mongoose';
-import User from '../models/User.js';
-import Institution from '../models/Institution.js';
-import Course from '../models/Course.js';
-import { connectToDatabase } from '../lib/db.js';
+import User from '../models/User.ts';
+import Institution from '../models/Institution.ts';
+import Course from '../models/Course.ts';
+import { connectToDatabase } from '../lib/db.ts';
 
 const seedDatabase = async () => {
   try {

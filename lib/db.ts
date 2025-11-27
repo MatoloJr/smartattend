@@ -1,4 +1,5 @@
-import mongoose, { ConnectOptions } from 'mongoose';
+import mongoose from 'mongoose';
+import type { ConnectOptions } from 'mongoose';
 
 // MongoDB connection string - uses environment variable for Atlas, falls back to local for development
 // For MongoDB Atlas: Set MONGODB_URI in .env.local file

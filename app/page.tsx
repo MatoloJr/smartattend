@@ -23,11 +23,22 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-const DemoAccountCard = ({ role, description, icon: Icon, onClick }: { 
-  role: string; 
+type DemoRole = 'admin' | 'faculty' | 'student';
+
+const DemoAccountCard = ({ 
+  roleLabel, 
+  roleKey,
+  description, 
+  icon: Icon, 
+  onClick,
+  isLoading
+}: { 
+  roleLabel: string; 
+  roleKey: DemoRole;
   description: string; 
   icon: React.ElementType; 
-  onClick: () => void 
+  onClick: () => void;
+  isLoading: boolean;
 }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col">
     <div className="flex items-center justify-between mb-4">
@@ -38,14 +49,15 @@ const DemoAccountCard = ({ role, description, icon: Icon, onClick }: {
         Demo Account
       </span>
     </div>
-    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{role}</h3>
+    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{roleLabel}</h3>
     <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 flex-grow">{description}</p>
     <Button 
       onClick={onClick}
+      disabled={isLoading}
       variant="outline" 
       className="w-full mt-auto group"
     >
-      Try as {role}
+      {isLoading ? 'Logging in...' : `Try as ${roleLabel}`}
       <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
     </Button>
   </div>
@@ -54,24 +66,34 @@ const DemoAccountCard = ({ role, description, icon: Icon, onClick }: {
 export default function Home() {
   const router = useRouter();
   const { login } = useAuth();
-  const [isLoading, setIsLoading] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState<DemoRole | null>(null);
 
-  const handleDemoLogin = async (role: 'admin' | 'faculty' | 'student') => {
+  const demoCredentials: Record<DemoRole, { email: string; password: string }> = {
+    admin: { email: 'admin@smart.edu', password: 'Password123!' },
+    faculty: { email: 'alice.lee@smart.edu', password: 'Password123!' },
+    student: { email: 'chris.mwangi@smart.edu', password: 'Password123!' },
+  };
+
+  const demoRoutes: Record<DemoRole, string> = {
+    admin: '/admin/dashboard',
+    faculty: '/faculty/dashboard',
+    student: '/student/dashboard',
+  };
+
+  const handleDemoLogin = async (role: DemoRole) => {
     setIsLoading(role);
-    const demoCredentials = {
-      admin: { username: 'admin001', password: 'admin123' },
-      faculty: { username: 'prof.smith', password: 'faculty123' },
-      student: { username: 'john.doe', password: 'student123' }
-    };
 
-    const { username, password } = demoCredentials[role];
-    const success = await login(username, password);
-    
-    if (success) {
-      toast.success(`Logged in as demo ${role}!`);
-      router.push('/dashboard');
-    } else {
-      toast.error('Failed to log in with demo account');
+    try {
+      const { email, password } = demoCredentials[role];
+      const success = await login(email, password);
+      
+      if (success) {
+        toast.success(`Logged in as demo ${role}!`);
+        router.push(demoRoutes[role]);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to log in with demo account');
+    } finally {
       setIsLoading(null);
     }
   };
@@ -147,22 +169,28 @@ export default function Home() {
             
             <div className="grid md:grid-cols-3 gap-6">
               <DemoAccountCard
-                role="Admin"
+                roleLabel="Admin"
+                roleKey="admin"
                 description="Full system access to manage users, courses, and view analytics."
                 icon={UserCog}
                 onClick={() => handleDemoLogin('admin')}
+                isLoading={isLoading === 'admin'}
               />
               <DemoAccountCard
-                role="Faculty"
+                roleLabel="Faculty"
+                roleKey="faculty"
                 description="Manage your classes, take attendance, and track student progress."
                 icon={GraduationCap}
                 onClick={() => handleDemoLogin('faculty')}
+                isLoading={isLoading === 'faculty'}
               />
               <DemoAccountCard
-                role="Student"
+                roleLabel="Student"
+                roleKey="student"
                 description="View your attendance records and class schedules in one place."
                 icon={UserCheck}
                 onClick={() => handleDemoLogin('student')}
+                isLoading={isLoading === 'student'}
               />
             </div>
             

@@ -8,10 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:connection": "node --loader ts-node/esm scripts/test-connection.ts",
-    "seed": "node --loader ts-node/esm scripts/seed.ts",
-    "import:mock": "node --loader ts-node/esm scripts/import-mock-data.ts",
-    "migrate:atlas": "node --loader ts-node/esm scripts/migrate-to-atlas.ts"
+    "test:connection": "ts-node --esm scripts/test-connection.ts",
+    "seed": "ts-node --esm scripts/seed.ts",
+    "import:mock": "ts-node --esm scripts/import-mock-data.ts",
+    "migrate:atlas": "ts-node --esm scripts/migrate-to-atlas.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

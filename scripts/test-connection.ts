@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env.local') });
 
-import { connectToDatabase } from '../lib/db.js';
+import { connectToDatabase } from '../lib/db.ts';
 
 /**
  * Simple script to test MongoDB Atlas connection

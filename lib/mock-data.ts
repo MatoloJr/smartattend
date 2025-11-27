@@ -1,4 +1,4 @@
-import { User, Institution, Session, AttendanceRecord, Apology } from './types';
+import type { User, Institution, Session, AttendanceRecord, Apology } from './types.ts';
 
 export const mockUsers: User[] = [
   // Admin users

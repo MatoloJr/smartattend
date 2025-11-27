@@ -670,9 +670,10 @@ const Register: React.FC = () => {
           </div>
         </div>
 
-        <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-gray-200 dark:border-gray-800">
-          {/* Step 1: Institution Setup */}
-          <Card className="w-full max-w-3xl mx-auto">
+        {step === 1 && (
+          <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-gray-200 dark:border-gray-800">
+            {/* Step 1: Institution Setup */}
+            <Card className="w-full max-w-3xl mx-auto">
             <form onSubmit={handleStep1Submit} id="institution-form">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -894,7 +895,8 @@ const Register: React.FC = () => {
               </div>
             </form>
           </Card>
-        </Card>
+          </Card>
+        )}
 
         {/* Step 2: Email Verification */}
         {step === 2 && (
