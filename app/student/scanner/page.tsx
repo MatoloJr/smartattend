@@ -124,6 +124,7 @@ const StudentScanner: React.FC = () => {
         body: JSON.stringify({
           sessionCode: sessionCode,
           sessionId: sessionId,
+          studentId: user?.id,
         }),
       });
 
@@ -278,6 +279,7 @@ const StudentScanner: React.FC = () => {
         <QRScanner
           onScanSuccess={handleScanSuccess}
           onScanError={handleScanError}
+          studentId={user?.id}
         />
         
         <Card className="glass">

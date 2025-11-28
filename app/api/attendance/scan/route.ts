@@ -4,8 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db';
 import Attendance from '@/models/Attendance';
 import Session from '@/models/Session';
-import Course from '@/models/Course';
 import Enrollment from '@/models/Enrollment';
+import User from '@/models/User';
 import { Types } from 'mongoose';
 
 export async function POST(req: Request) {
@@ -19,11 +19,42 @@ export async function POST(req: Request) {
       );
     }
 
-    const { sessionCode, sessionId } = await req.json();
+    const { sessionCode, sessionId, studentId } = await req.json();
     const timestamp = new Date();
     
     // Connect to database
     await connectToDatabase();
+
+    // Resolve student identity either from NextAuth session or request body
+    let studentObjectId: Types.ObjectId | null = null;
+    if (session?.user?.id) {
+      studentObjectId = new Types.ObjectId(session.user.id);
+    } else if (studentId) {
+      try {
+        studentObjectId = new Types.ObjectId(studentId);
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Invalid student identifier provided' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!studentObjectId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: missing student context' },
+        { status: 401 }
+      );
+    }
+
+    // Ensure the student exists and is active
+    const studentRecord = await User.findById(studentObjectId);
+    if (!studentRecord) {
+      return NextResponse.json(
+        { error: 'Student account not found' },
+        { status: 404 }
+      );
+    }
 
     // Find the session by code or ID
     let attendanceSession;
@@ -65,7 +96,7 @@ export async function POST(req: Request) {
     // Check if student is enrolled in the course
     const enrollment = await Enrollment.findOne({
       course: attendanceSession.course,
-      student: new Types.ObjectId(session.user.id),
+      student: studentObjectId,
       status: 'ACTIVE'
     });
 
@@ -79,7 +110,7 @@ export async function POST(req: Request) {
     // Check for existing attendance record
     const existingRecord = await Attendance.findOne({
       session: attendanceSession._id,
-      student: session.user.id,
+      student: studentObjectId,
     });
 
     if (existingRecord) {
@@ -101,10 +132,10 @@ export async function POST(req: Request) {
     // Create new attendance record
     const attendanceRecord = new Attendance({
       session: attendanceSession._id,
-      student: session.user.id,
+      student: studentObjectId,
       course: attendanceSession.course,
       status: status,
-      recordedBy: session.user.id,
+      recordedBy: studentObjectId,
       date: timestamp,
     });
 

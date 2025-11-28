@@ -12,11 +12,13 @@ import { toast } from 'sonner';
 interface QRScannerProps {
   onScanSuccess: (decodedData: any) => void;
   onScanError?: (error: string) => void;
+  studentId?: string;
 }
 
 export const QRScanner: React.FC<QRScannerProps> = ({
   onScanSuccess,
-  onScanError
+  onScanError,
+  studentId
 }) => {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -178,6 +180,11 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     setIsSubmitting(true);
     
     try {
+      if (!studentId) {
+        toast.error('Student information missing. Please log in again.');
+        return;
+      }
+
       // Call the API endpoint to validate and get session info
       const response = await fetch('/api/attendance/scan', {
         method: 'POST',
@@ -186,6 +193,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({
         },
         body: JSON.stringify({
           sessionCode: manualCode,
+          studentId,
         }),
       });
 

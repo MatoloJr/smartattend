@@ -176,16 +176,16 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center justify-between min-w-0 flex-1 gap-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+            <h1 className="order-1 flex-1 min-w-0 truncate text-base font-semibold text-gray-900 dark:text-white sm:text-lg lg:text-xl">
               {title}
             </h1>
 
-            <div className="flex-1 max-w-2xl mx-auto">
-              <SearchBar />
+            <div className="order-3 w-full md:order-2 md:flex-1 md:max-w-2xl">
+              <SearchBar className="w-full" />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="order-2 flex flex-shrink-0 items-center gap-2 md:order-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
